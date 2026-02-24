@@ -30,3 +30,10 @@ map.addControl(new maplibregl.NavigationControl({
     showZoom: true,
     showCompass: true
 }));
+
+map.addControl(new maplibregl.GeolocateControl({
+    positionOptions: {
+        enableHighAccuracy: true
+    },
+    trackUserLocation: true
+}));
