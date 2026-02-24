@@ -3,18 +3,66 @@
   <head>
     <meta charset='utf-8'>
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>Tauri + React + Typescript</title>
 
     <style>
-      body { margin: 0; padding: 0; }
-      html, body, #map { height: 100%; }
+      :root {
+        /* Výchozí světlý režim */
+        --bg-color: #ffffff;
+        --text-color: #1a1a1a;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          /* Automatický tmavý režim dle systému */
+          --bg-color: #121212;
+          --text-color: #f0f0f0;
+        }
+      }
+
+
+      html, body {
+        width: 100lvh;
+        height: 100lvh; // TODO height: -webkit-fill-available;
+        overflow: hidden;
+
+        overscroll-behavior: none;
+        margin: 0; padding: 0;
+
+        -webkit-user-select: none; /* Safari */
+        user-select: none; /* Standard */
+        -webkit-touch-callout: none; /* Prevent long-press menu on iOS */
+
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s ease;
+      }
+
+      #map {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100lvh;
+        height: 100lvh;
+      }
+
+      #root, .maplibregl-ctrl-top-right {
+          padding-top: env(safe-area-inset-top);
+        }
+      }
+
+      #root {
+        -webkit-user-select: all;
+        user-select: all;
+        -webkit-touch-callout: default; // TODO test this properly
+      }
     </style>
   </head>
 
   <body>
-  <div id="root"></div>
-  <div id="map"></div>
+    <div id="root"></div>
+    <div id="map"></div>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

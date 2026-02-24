@@ -8,6 +8,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <div style={{ position: 'absolute', top: 0, left: 0, padding: 10, zIndex: 1 }}>
       <h1>MapLibre GL JS Example</h1>
+        <input/>
     </div>
   </React.StrictMode>,
 );
