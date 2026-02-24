@@ -8,14 +8,12 @@
 
     <style>
       :root {
-        /* Výchozí světlý režim */
-        --bg-color: #ffffff;
+        --bg-color: #D8F2FF;  /*same as the map background*/
         --text-color: #1a1a1a;
       }
 
       @media (prefers-color-scheme: dark) {
         :root {
-          /* Automatický tmavý režim dle systému */
           --bg-color: #121212;
           --text-color: #f0f0f0;
         }
@@ -23,7 +21,7 @@
 
 
       html, body {
-        width: 100lvh;
+        width: 100lvw;
         height: 100lvh; // TODO height: -webkit-fill-available;
         overflow: hidden;
 
@@ -42,8 +40,7 @@
       #map {
         position: absolute;
         top: 0; left: 0;
-        width: 100lvh;
-        height: 100lvh;
+        right: 0; bottom: 0;
       }
 
       #root, .maplibregl-ctrl-top-right {
