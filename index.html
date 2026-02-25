@@ -3,19 +3,10 @@
   <head>
     <meta charset='utf-8'>
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta
-            name="viewport"
-            content="width=device-width, user-scalable=no, initial-scale=1, viewport-fit=cover"
-    />
-    <meta
-            name="apple-mobile-web-app-status-bar-style"
-            content="black-translucent"
-    />
-<!--    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">-->
-<!--    <meta name="apple-mobile-web-app-capable" content="yes">-->
-<!--    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">-->
-    <title>Tauri + React + Typescript</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Tauri maplibre</title>
     <style>
       :root {
         --bg-color: palegreen;  /*TODO same as the map background D8F2FF*/
@@ -38,6 +29,7 @@
       html, body{
         margin: 0;
         padding: 0;
+        touch-action: none;
       }
 
       html {
@@ -61,22 +53,23 @@
         right: 0;
         bottom: 0;
         left: 0;
-
       }
 
       #map {
         position: absolute;
-        top: 0; left: 0px;
+        top: 0; left: 0;
         right: 0; bottom: 0;
-        background: #f60;
+        /*background: #f60;*/
       }
 
       #root {
         position: absolute;
-        top: env(safe-area-inset-top);
-        bottom: env(safe-area-inset-bottom);
-        left: env(safe-area-inset-left);
-        right: env(safe-area-inset-right);
+        top: 10px; left: 10px;
+        right: 10px; bottom: 10px;
+        /*top: env(safe-area-inset-top);*/
+        /*bottom: env(safe-area-inset-bottom);*/
+        /*left: env(safe-area-inset-left);*/
+        /*right: env(safe-area-inset-right);*/
       }
 
       .maplibregl-ctrl-top-right {
@@ -102,14 +95,6 @@
   <body>
     <div id="root"></div>
     <div id="map"></div>
-
-<!--    a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>-->
-<!--    a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>-->
-<!--    a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>-->
-<!--    a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>-->
-<!--    a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>-->
-<!--    a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>-->
-<!--d    a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>-->
 
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -6,9 +6,13 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <div style={{ position: 'absolute', top: 0, left: 0, background: "palegoldenrod", zIndex: 1 }}>
+    <div style={{ position: 'absolute', top: 0, left: 0, bottom:0, background: "palegoldenrod", zIndex: 1, overflow: "scroll" }}>
       <h1>MapLibre GL JS Example</h1>
         <input/>
+
+        <div style={{height:"1500px", width:'100%'}}>
+            asdfa
+        </div>
     </div>
   </React.StrictMode>,
 );
