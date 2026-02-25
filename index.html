@@ -9,7 +9,7 @@
     <title>Tauri maplibre</title>
     <style>
       :root {
-        --bg-color: palegreen;  /*TODO same as the map background D8F2FF*/
+        --bg-color: #f6f6f6;  /*Must be a neutral "paper" color, because safari extends it below keyboard, and above top part of page*/
         --text-color: #1a1a1a;
       }
       @media (prefers-color-scheme: dark) {
@@ -62,20 +62,9 @@
         /*background: #f60;*/
       }
 
-      #root {
-        position: absolute;
-        top: 10px; left: 10px;
-        right: 10px; bottom: 10px;
-        /*top: env(safe-area-inset-top);*/
-        /*bottom: env(safe-area-inset-bottom);*/
-        /*left: env(safe-area-inset-left);*/
-        /*right: env(safe-area-inset-right);*/
-      }
-
       .maplibregl-ctrl-top-right {
+        margin-top: var(--safe-top);
       }
-
-
 
       /* user-select */
       html, body {
@@ -88,6 +77,18 @@
         -webkit-user-select: all;
         user-select: all;
         -webkit-touch-callout: default; /* TODO test this properly */
+      }
+
+      #panel {
+        position: absolute;
+        top: 100px;
+        left: 10px;
+        bottom: 10px;
+        right: 10px;
+        z-index: 1;
+        overflow: auto;
+
+        background-color: var(--bg-color);
       }
     </style>
   </head>
