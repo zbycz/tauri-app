@@ -4,6 +4,8 @@
     <meta charset='utf-8'>
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Tauri + React + Typescript</title>
 
     <style>
@@ -38,13 +40,15 @@
 
       #map {
         position: absolute;
-        top: 0; left: 0;
+        top: 0; left: 100px;
         right: 0; bottom: 0;
+        background: #f60;
       }
 
       #root, .maplibregl-ctrl-top-right {
-          padding-top: env(safe-area-inset-top);
-        }
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        height: 100vh;
       }
 
       #root {
@@ -58,6 +62,14 @@
   <body>
     <div id="root"></div>
     <div id="map"></div>
+
+    a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>
+    a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>
+    a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>
+    a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>
+    a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>
+    a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>
+d    a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>
 
     <script type="module" src="/src/main.tsx"></script>
   </body>

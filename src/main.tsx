@@ -6,7 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <div style={{ position: 'absolute', top: 0, left: 0, padding: 10, zIndex: 1 }}>
+    <div style={{ position: 'absolute', top: 0, left: 0, background: "palegoldenrod", zIndex: 1 }}>
       <h1>MapLibre GL JS Example</h1>
         <input/>
     </div>
@@ -15,7 +15,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
 
 
 const map = new maplibregl.Map({
-    container: 'map', // container id
+    container: 'xmap', // container id
     style: 'https://demotiles.maplibre.org/style.json',
     center: [-74.5, 40], // starting position
     zoom: 2, // starting zoom
