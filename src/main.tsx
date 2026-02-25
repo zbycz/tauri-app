@@ -15,7 +15,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
 
 
 const map = new maplibregl.Map({
-    container: 'xmap', // container id
+    container: 'map', // container id
     style: 'https://demotiles.maplibre.org/style.json',
     center: [-74.5, 40], // starting position
     zoom: 2, // starting zoom
