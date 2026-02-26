@@ -2,19 +2,58 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import {TauriGeolocateControl} from "./TauriGeolocateControl.tsx";
+import {
+    checkPermissions,
+    requestPermissions,
+    getCurrentPosition,
+} from '@tauri-apps/plugin-geolocation';
 
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>
-    <div id="panel">
-      <h1>MapLibre GL JS Example</h1>
+const getPositionOrDenial = async () => {
+    let permissions = await checkPermissions();
+    if (
+        permissions.location === 'prompt' ||
+        permissions.location === 'prompt-with-rationale'
+    ) {
+        permissions = await requestPermissions(['location']);
+    }
+
+    if (permissions.location !== 'granted') {
+        return "denied";
+    }
+
+    const { coords: {latitude, longitude }} = await getCurrentPosition();
+    return {latitude, longitude};
+}
+
+
+const App = () => {
+    const [location, setLocation] = React.useState("");
+
+    const onClick = async () => {
+        const pos = await getPositionOrDenial();
+        setLocation(JSON.stringify(pos));
+    }
+
+    return <div id="panel">
+        <h1>MapLibre GL JS Example</h1>
 
         <input/>
-        <div style={{height:"1500px", width:'100%'}}></div>
+        <button onClick={onClick}>Get Location</button>
+        <div style={{height: "1500px", width: "100%"}}>
+            {location}
+
+        </div>
         x<br/>
         y<br/>
         z
-    </div>
+    </div>;
+};
+
+ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+  <React.StrictMode>
+      <App/>
   </React.StrictMode>,
 );
 
@@ -36,7 +75,7 @@ map.addControl(new maplibregl.NavigationControl({
     showCompass: true
 }));
 
-map.addControl(new maplibregl.GeolocateControl({
+map.addControl(new TauriGeolocateControl({
     positionOptions: {
         enableHighAccuracy: true
     },

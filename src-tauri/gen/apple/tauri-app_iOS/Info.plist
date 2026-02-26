@@ -41,6 +41,6 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Required to geolocate user on map</string>
+	<string>The "locate me" button above the map.</string>
 </dict>
 </plist>
