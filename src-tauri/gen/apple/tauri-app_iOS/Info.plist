@@ -41,6 +41,6 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>The "locate me" button above the map.</string>
+	<string>Needed for the &quot;locate me&quot; button on the map.</string>
 </dict>
 </plist>

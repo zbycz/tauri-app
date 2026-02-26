@@ -2,15 +2,37 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import {TauriGeolocateControl} from "./TauriGeolocateControl.tsx";
 import {
     checkPermissions,
     requestPermissions,
     getCurrentPosition,
 } from '@tauri-apps/plugin-geolocation';
+import {isTauri} from "@tauri-apps/api/core";
+
+
+// Geolocation in tauri works only on iOS/Android
+// General discussion: https://github.com/orgs/tauri-apps/discussions/6048#discussioncomment-11967854
+// desktop+polyfill? issue: https://github.com/tauri-apps/plugins-workspace/issues/2074
 
 
 const getPositionOrDenial = async () => {
+
+    //-- NEFUNGUJE
+    console.log("NEFUNGUJE CONSOLE !!! Tauri Geolocation plugin is available");
+
+    if(isTauri()) {
+        console.log({window});
+
+
+        // this._geolocationWatchID = window.navigator.geolocation.watchPosition(
+        //                     this._onSuccess, this._onError, positionOptions);
+        //window.navigator.geolocation.getCurrentPosition(
+        //                 this._onSuccess, this._onError, this.options.positionOptions);
+        //window.navigator.geolocation.clearWatch(this._geolocationWatchID);
+
+
+    }
+
     let permissions = await checkPermissions();
     if (
         permissions.location === 'prompt' ||
@@ -23,9 +45,19 @@ const getPositionOrDenial = async () => {
         return "denied";
     }
 
-    const { coords: {latitude, longitude }} = await getCurrentPosition();
+    const res = await getCurrentPosition();
+    const { coords: {latitude, longitude }} = res;
     return {latitude, longitude};
+
+    // await watchPosition(
+    //     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    //     (pos) => {
+    //       console.log(pos);
+    //     }
+    //   );
 }
+
+
 
 
 const App = () => {
@@ -75,7 +107,7 @@ map.addControl(new maplibregl.NavigationControl({
     showCompass: true
 }));
 
-map.addControl(new TauriGeolocateControl({
+map.addControl(new maplibregl.GeolocateControl({
     positionOptions: {
         enableHighAccuracy: true
     },
