@@ -57,3 +57,21 @@ For multi-step tasks, state a brief plan:
 ```
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+
+------
+
+Setup Script of this container (already run):
+```bash
+#!/bin/bash
+npm install -g netlify-cli
+curl -fsSL https://bun.com/install | bash
+
+sudo apt-get update && sudo apt-get install -y \
+  libgtk-3-dev \
+  libwebkit2gtk-4.1-dev \
+  libsquashfs-dev \
+  libsecret-1-dev \
+  xvfb \
+  dbus-x11
+```
