@@ -106,6 +106,29 @@ function buildOfflineStyle(): any {
     // Drop the online natural-earth raster so the style is fully offline.
     delete style.sources.ne2_shaded;
     style.layers = style.layers.filter((l: any) => l.source !== "ne2_shaded");
+
+    // Add hillshading DEM source (terrarium encoding) and hillshade layer.
+    style.sources.hillshading = {
+        type: "raster-dem",
+        tiles: ["offline://hillshading/{z}/{x}/{y}.webp"],
+        tileSize: 256,
+        minzoom: 0,
+        maxzoom: 14,
+        encoding: "terrarium",
+    };
+    // Insert the hillshade layer just above the background so terrain shading
+    // shows through without obscuring labels or roads.
+    const bgIdx = style.layers.findIndex((l: any) => l.type !== "background");
+    const insertAt = bgIdx >= 0 ? bgIdx : 0;
+    style.layers.splice(insertAt, 0, {
+        id: "hillshading",
+        type: "hillshade",
+        source: "hillshading",
+        paint: {
+            "hillshade-exaggeration": 0.5,
+        },
+    });
+
     return style;
 }
 
