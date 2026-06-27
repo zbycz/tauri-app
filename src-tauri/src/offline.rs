@@ -13,6 +13,7 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
 
 const TILE_URL_BASE: &str = "https://tiles.openfreemap.org/planet/20260621_080001_pt";
+const HILLSHADING_URL_BASE: &str = "https://tiles.mapterhorn.com";
 const FONTS_URL_BASE: &str = "https://tiles.openfreemap.org/fonts";
 const SPRITE_URL_BASE: &str = "https://tiles.openfreemap.org/sprites/ofm_f384";
 // Font stacks used by the bundled "liberty" style.
@@ -278,6 +279,20 @@ pub async fn download_region(
             },
         );
     }
+
+    // Download hillshading raster tiles for the same region.
+    let _ = app.emit("download-status", "Stahuji hillshading…");
+    let hs_dir = data_dir(&app).join("hillshading");
+    for (z, x, y) in &tiles {
+        let url = format!("{HILLSHADING_URL_BASE}/{z}/{x}/{y}.webp");
+        let dest = hs_dir.join(z.to_string()).join(x.to_string()).join(format!("{y}.webp"));
+        if dest.exists() {
+            continue;
+        }
+        let _ = fetch_to(&app, &client, &url, dest).await;
+        // ignore individual tile errors (tile may not exist at this z/x/y)
+    }
+    let _ = app.emit("download-status", "");
 
     // Persist the region so the map can show what is downloaded.
     let mut regions = read_regions(&app);
