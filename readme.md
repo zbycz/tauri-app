@@ -5,7 +5,9 @@ Simulator
 ```bash
 bun tauri build
 
-# output in 
+# output in
+# ~/dev/tauri-app/src-tauri/target/release/bundle/macos/tauri-app.app
+# ~/dev/tauri-app/src-tauri/target/release/bundle/dmg/tauri-app_0.1.0_aarch64.dmg 
 ```
 
 
