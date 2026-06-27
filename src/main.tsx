@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import mlcontour from 'maplibre-contour';
 import {
     checkPermissions,
     requestPermissions,
@@ -266,8 +267,92 @@ const map = new maplibregl.Map({
     rollEnabled: true // Enable mouse control of camera roll angle with `Ctrl` + right-click and drag
 });
 
+const demSource = new mlcontour.DemSource({
+    url: 'https://tiles.mapterhorn.com/{z}/{x}/{y}.webp',
+    encoding: 'terrarium',
+    maxzoom: 12,
+    worker: true,
+});
+demSource.setupMaplibre(maplibregl);
+
+function addContourLayers(map: maplibregl.Map) {
+    if (map.getSource('contour-dem')) return;
+
+    map.addSource('contour-dem', {
+        type: 'raster-dem',
+        tiles: [demSource.sharedDemProtocolUrl],
+        tileSize: 256,
+        maxzoom: 12,
+        encoding: 'terrarium',
+    } as any);
+
+    map.addLayer({
+        id: 'contour-hillshade',
+        type: 'hillshade',
+        source: 'contour-dem',
+        paint: {
+            'hillshade-method': 'igor',
+            'hillshade-exaggeration': 0.2,
+            'hillshade-highlight-color': '#fffef0',
+            'hillshade-shadow-color': '#473a20',
+        },
+    } as any);
+
+    const contourUrl = demSource.contourProtocolUrl({
+        thresholds: {
+            12: [100, 500],
+            13: [50, 200],
+            14: [20, 100],
+        },
+        overzoom: 1,
+        elevationKey: 'ele',
+        levelKey: 'level',
+        contourLayer: 'contours',
+    });
+
+    map.addSource('contours', {
+        type: 'vector',
+        tiles: [contourUrl],
+        maxzoom: 14,
+    });
+
+    map.addLayer({
+        id: 'contour-lines',
+        type: 'line',
+        source: 'contours',
+        'source-layer': 'contours',
+        paint: {
+            'line-color': 'rgb(215, 151, 60)',
+            'line-width': ['match', ['get', 'level'], 1, 1, 0.5],
+            'line-opacity': 0.7,
+        },
+    });
+
+    map.addLayer({
+        id: 'contour-labels',
+        type: 'symbol',
+        source: 'contours',
+        'source-layer': 'contours',
+        filter: ['==', ['get', 'level'], 1],
+        layout: {
+            'symbol-placement': 'line',
+            'text-field': ['concat', ['to-string', ['get', 'ele']], 'm'],
+            'text-size': 11,
+            'text-font': ['Noto Sans Bold'],
+        },
+        paint: {
+            'text-color': 'rgb(180, 120, 40)',
+            'text-halo-color': 'white',
+            'text-halo-width': 1,
+        },
+    });
+}
+
 // Show any previously downloaded regions on first load.
-map.on('load', () => { showRegions(map); });
+map.on('load', () => {
+    showRegions(map);
+    addContourLayers(map);
+});
 
 
 // Add zoom and rotation controls to the map.
