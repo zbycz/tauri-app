@@ -112,7 +112,7 @@ function buildOfflineStyle(): any {
     style.sources.hillshading = {
         type: "raster-dem",
         tiles: ["offline://hillshading/{z}/{x}/{y}.webp"],
-        tileSize: 256,
+        tileSize: 512,
         minzoom: 0,
         maxzoom: 14,
         encoding: "terrarium",
