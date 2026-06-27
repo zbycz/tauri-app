@@ -197,9 +197,10 @@ const App = () => {
             await invoke("download_region", { name: loc.name, lat: loc.lat, lon: loc.lon, radiusM: loc.radius });
             // 3. Switch to the offline style and centre on the area.
             const style = buildOfflineStyle();
-            map.once("style.load", () => { showRegions(map); addContourLayers(map); });
-            map.setStyle(style, { diff: false });
-            map.flyTo({ center: [loc.lon, loc.lat], zoom: 13 });
+            const m = await map;
+            m.once("style.load", () => { showRegions(m); addContourLayers(m); });
+            m.setStyle(style, { diff: false });
+            m.flyTo({ center: [loc.lon, loc.lat], zoom: 13 });
         } catch {
             // error already surfaced via the download-error event
         } finally {
@@ -258,14 +259,6 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   </React.StrictMode>,
 );
 
-
-const map = new maplibregl.Map({
-    container: 'map', // container id
-    style: 'https://demotiles.maplibre.org/style.json',
-    center: [-74.5, 40], // starting position
-    zoom: 2, // starting zoom
-    rollEnabled: true // Enable mouse control of camera roll angle with `Ctrl` + right-click and drag
-});
 
 const demSource = new mlcontour.DemSource({
     url: 'https://tiles.mapterhorn.com/{z}/{x}/{y}.webp',
@@ -348,24 +341,45 @@ function addContourLayers(map: maplibregl.Map) {
     });
 }
 
-// Show any previously downloaded regions on first load.
-map.on('load', () => {
-    showRegions(map);
-    addContourLayers(map);
-});
+async function initMap() {
+    let initialStyle: any = 'https://demotiles.maplibre.org/style.json';
+    let initialCenter: [number, number] = [-74.5, 40];
+    let initialZoom = 2;
 
+    if (isTauri()) {
+        const regions = await invoke<Region[]>("get_regions");
+        if (regions.length > 0) {
+            initialStyle = buildOfflineStyle();
+            initialCenter = [regions[0].lon, regions[0].lat];
+            initialZoom = 13;
+        }
+    }
 
-// Add zoom and rotation controls to the map.
-map.addControl(new maplibregl.NavigationControl({
-    visualizePitch: true,
-    visualizeRoll: true,
-    showZoom: true,
-    showCompass: true
-}));
+    const map = new maplibregl.Map({
+        container: 'map',
+        style: initialStyle,
+        center: initialCenter,
+        zoom: initialZoom,
+        rollEnabled: true
+    });
 
-map.addControl(new maplibregl.GeolocateControl({
-    positionOptions: {
-        enableHighAccuracy: true
-    },
-    trackUserLocation: true
-}));
+    map.on('load', () => { showRegions(map); addContourLayers(map); });
+
+    map.addControl(new maplibregl.NavigationControl({
+        visualizePitch: true,
+        visualizeRoll: true,
+        showZoom: true,
+        showCompass: true
+    }));
+
+    map.addControl(new maplibregl.GeolocateControl({
+        positionOptions: {
+            enableHighAccuracy: true
+        },
+        trackUserLocation: true
+    }));
+
+    return map;
+}
+
+const map = initMap();
