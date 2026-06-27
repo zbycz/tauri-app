@@ -59,6 +59,10 @@ For multi-step tasks, state a brief plan:
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
 
+## 5. Package Manager
+
+This project uses **bun** (installed in the container). Use `bun install`, `bun run`, etc. — not `npm`.
+
 ------
 
 Setup Script of this container (already run):
