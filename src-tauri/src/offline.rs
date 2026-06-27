@@ -27,6 +27,8 @@ const MAX_ZOOM: u32 = 14;
 // Rough average compressed size of an OpenMapTiles vector tile. Only used for
 // the up-front size estimate; the real total is reported as bytes arrive.
 const AVG_TILE_BYTES: u64 = 60_000;
+// Hillshading WebP tiles are smaller rasters (terrarium DEM encoding).
+const AVG_HS_TILE_BYTES: u64 = 15_000;
 
 #[derive(Serialize, Clone)]
 pub struct ZoomPlan {
@@ -154,14 +156,15 @@ pub fn plan_download(lat: f64, lon: f64, radius_m: f64) -> DownloadPlan {
             per_zoom.push(ZoomPlan {
                 zoom: z,
                 tiles: count,
-                est_bytes: count as u64 * AVG_TILE_BYTES,
+                // include hillshading tiles in the per-zoom estimate
+                est_bytes: count as u64 * (AVG_TILE_BYTES + AVG_HS_TILE_BYTES),
             });
         }
     }
     let total_tiles = tiles.len();
     DownloadPlan {
         total_tiles,
-        total_est_bytes: total_tiles as u64 * AVG_TILE_BYTES,
+        total_est_bytes: total_tiles as u64 * (AVG_TILE_BYTES + AVG_HS_TILE_BYTES),
         per_zoom,
     }
 }
@@ -280,19 +283,43 @@ pub async fn download_region(
         );
     }
 
-    // Download hillshading raster tiles for the same region.
-    let _ = app.emit("download-status", "Stahuji hillshading…");
+    // Download hillshading raster tiles — counted as a second pass in the same
+    // combined total so the progress bar runs continuously from 0 to 2×tiles.
+    let combined_total = total * 2;
     let hs_dir = data_dir(&app).join("hillshading");
-    for (z, x, y) in &tiles {
+    for (i, (z, x, y)) in tiles.iter().enumerate() {
         let url = format!("{HILLSHADING_URL_BASE}/{z}/{x}/{y}.webp");
         let dest = hs_dir.join(z.to_string()).join(x.to_string()).join(format!("{y}.webp"));
-        if dest.exists() {
-            continue;
+        if !dest.exists() {
+            if let Ok(resp) = client.get(&url).send().await {
+                if resp.status().is_success() {
+                    if let Ok(body) = resp.bytes().await {
+                        bytes += body.len() as u64;
+                        let _ = std::fs::create_dir_all(dest.parent().unwrap());
+                        let _ = std::fs::write(dest, &body);
+                    }
+                }
+            }
         }
-        let _ = fetch_to(&app, &client, &url, dest).await;
-        // ignore individual tile errors (tile may not exist at this z/x/y)
+        let done = total + i + 1;
+        let elapsed = start.elapsed().as_secs_f64();
+        let eta = if done > 0 {
+            (elapsed / done as f64 * (combined_total - done) as f64) as u64
+        } else {
+            0
+        };
+        let _ = app.emit(
+            "download-progress",
+            Progress {
+                name: name.clone(),
+                zoom: *z,
+                done,
+                total: combined_total,
+                bytes,
+                eta_seconds: eta,
+            },
+        );
     }
-    let _ = app.emit("download-status", "");
 
     // Persist the region so the map can show what is downloaded.
     let mut regions = read_regions(&app);
