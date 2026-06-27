@@ -79,14 +79,15 @@ type Region = { name: string; lat: number; lon: number; radius_m: number };
 
 const fmtMB = (bytes: number) => (bytes / 1_000_000).toFixed(2) + " MB";
 
-// MapLibre asks for offline tiles through this protocol; we answer from disk via
-// the Tauri bridge (the `get_tile` command).
+// MapLibre asks for offline resources (tiles, glyphs, sprite) through this
+// protocol; we answer from disk via the Tauri bridge (the `get_asset` command).
 maplibregl.addProtocol("offline", async (params) => {
-    const m = params.url.match(/offline:\/\/tiles\/(\d+)\/(\d+)\/(\d+)/);
-    if (!m) throw new Error("bad offline tile url: " + params.url);
-    const [, z, x, y] = m;
-    const data = await invoke<ArrayBuffer>("get_tile", { z: +z, x: +x, y: +y });
-    return { data };
+    const path = decodeURIComponent(params.url.replace(/^offline:\/\//, ""));
+    const bytes = await invoke<ArrayBuffer>("get_asset", { path });
+    if (params.type === "json") {
+        return { data: JSON.parse(new TextDecoder().decode(new Uint8Array(bytes))) };
+    }
+    return { data: bytes };
 });
 
 // OpenFreeMap "liberty" style (bundled), rewired to read vector tiles from disk
@@ -99,6 +100,9 @@ function buildOfflineStyle(): any {
         minzoom: 0,
         maxzoom: 14,
     };
+    // Read fonts and icons from disk too, so the style is fully offline.
+    style.glyphs = "offline://glyphs/{fontstack}/{range}.pbf";
+    style.sprite = "offline://sprite/ofm";
     // Drop the online natural-earth raster so the style is fully offline.
     delete style.sources.ne2_shaded;
     style.layers = style.layers.filter((l: any) => l.source !== "ne2_shaded");
@@ -134,7 +138,6 @@ async function showRegions(map: maplibregl.Map) {
         return;
     }
     map.addSource("regions", { type: "geojson", data: fc as any });
-    map.addLayer({ id: "regions-fill", type: "fill", source: "regions", paint: { "fill-color": "#d50000", "fill-opacity": 0.08 } });
     map.addLayer({ id: "regions-line", type: "line", source: "regions", paint: { "line-color": "#d50000", "line-width": 3 } });
 }
 
@@ -142,13 +145,15 @@ const App = () => {
     const [location, setLocation] = React.useState("");
     const [plan, setPlan] = React.useState<DownloadPlan | null>(null);
     const [progress, setProgress] = React.useState<Progress | null>(null);
+    const [status, setStatus] = React.useState("");
     const [error, setError] = React.useState("");
     const [busy, setBusy] = React.useState(false);
 
     React.useEffect(() => {
         const unP = listen<Progress>("download-progress", (e) => setProgress(e.payload));
+        const unS = listen<string>("download-status", (e) => setStatus(e.payload));
         const unE = listen<string>("download-error", (e) => setError(e.payload));
-        return () => { unP.then((f) => f()); unE.then((f) => f()); };
+        return () => { unP.then((f) => f()); unS.then((f) => f()); unE.then((f) => f()); };
     }, []);
 
     const onClick = async () => {
@@ -206,6 +211,8 @@ const App = () => {
                 <div>Celkem: {plan.total_tiles} dlaždic, odhad {fmtMB(plan.total_est_bytes)}</div>
             </div>
         )}
+
+        {status && <div style={{ marginTop: 8, fontSize: 13 }}>{status}</div>}
 
         {progress && (
             <div style={{ marginTop: 8, fontSize: 13 }}>

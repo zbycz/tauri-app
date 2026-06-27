@@ -15,7 +15,7 @@ pub fn run() {
             greet,
             offline::plan_download,
             offline::download_region,
-            offline::get_tile,
+            offline::get_asset,
             offline::get_regions,
         ])
         .run(tauri::generate_context!())

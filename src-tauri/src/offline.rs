@@ -1,9 +1,10 @@
-// Offline OpenFreeMap vector-tile download + serving.
+// Offline OpenFreeMap download + serving.
 //
-// Tiles are fetched from OpenFreeMap's planet endpoint by the Rust backend and
-// stored on disk under <app_data_dir>/tiles/{z}/{x}/{y}.pbf. The frontend asks
-// for them through the `get_tile` command (the Tauri bridge), which keeps tile
-// delivery local and fast.
+// The Rust backend fetches everything the map needs from OpenFreeMap and stores
+// it as plain files under <app_data_dir>: vector tiles in tiles/{z}/{x}/{y}.pbf,
+// label fonts in glyphs/{fontstack}/{range}.pbf and icons in sprite/. The
+// frontend reads them back through the `get_asset` command (the Tauri bridge),
+// which keeps delivery local and fast.
 
 use std::f64::consts::PI;
 use std::path::PathBuf;
@@ -12,6 +13,14 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
 
 const TILE_URL_BASE: &str = "https://tiles.openfreemap.org/planet/20260621_080001_pt";
+const FONTS_URL_BASE: &str = "https://tiles.openfreemap.org/fonts";
+const SPRITE_URL_BASE: &str = "https://tiles.openfreemap.org/sprites/ofm_f384";
+// Font stacks used by the bundled "liberty" style.
+const FONTSTACKS: [&str; 3] = ["Noto Sans Regular", "Noto Sans Bold", "Noto Sans Italic"];
+// Unicode glyph ranges to fetch per font stack (Latin + Latin Extended + more,
+// enough for Czech place names).
+const GLYPH_RANGES: [&str; 4] = ["0-255", "256-511", "512-767", "768-1023"];
+const SPRITE_FILES: [&str; 4] = ["ofm.json", "ofm.png", "ofm@2x.json", "ofm@2x.png"];
 const MIN_ZOOM: u32 = 0;
 const MAX_ZOOM: u32 = 14;
 // Rough average compressed size of an OpenMapTiles vector tile. Only used for
@@ -113,18 +122,16 @@ fn tiles_for_region(lat: f64, lon: f64, radius_m: f64) -> Vec<(u32, u32, u32)> {
 
 // --- paths ------------------------------------------------------------------
 
+fn data_dir(app: &AppHandle) -> PathBuf {
+    app.path().app_data_dir().expect("no app data dir")
+}
+
 fn tiles_dir(app: &AppHandle) -> PathBuf {
-    app.path()
-        .app_data_dir()
-        .expect("no app data dir")
-        .join("tiles")
+    data_dir(app).join("tiles")
 }
 
 fn regions_file(app: &AppHandle) -> PathBuf {
-    app.path()
-        .app_data_dir()
-        .expect("no app data dir")
-        .join("regions.json")
+    data_dir(app).join("regions.json")
 }
 
 fn read_regions(app: &AppHandle) -> Vec<Region> {
@@ -158,6 +165,54 @@ pub fn plan_download(lat: f64, lon: f64, radius_m: f64) -> DownloadPlan {
     }
 }
 
+// Fetch a single URL to a file. Returns Err("rate_limited") on HTTP 429.
+async fn fetch_to(
+    app: &AppHandle,
+    client: &reqwest::Client,
+    url: &str,
+    dest: PathBuf,
+) -> Result<(), String> {
+    let resp = client.get(url).send().await.map_err(|e| e.to_string())?;
+    if resp.status().as_u16() == 429 {
+        let _ = app.emit(
+            "download-error",
+            "OpenFreeMap vrátil 429 (příliš mnoho požadavků). Stahování zastaveno.",
+        );
+        return Err("rate_limited".into());
+    }
+    if resp.status().is_success() {
+        let body = resp.bytes().await.map_err(|e| e.to_string())?;
+        std::fs::create_dir_all(dest.parent().unwrap()).map_err(|e| e.to_string())?;
+        std::fs::write(dest, &body).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+// Download the label fonts and sprite icons once, so the offline style renders
+// fully without a network. Skipped if the sprite is already present.
+async fn download_assets(app: &AppHandle, client: &reqwest::Client) -> Result<(), String> {
+    let dir = data_dir(app);
+    if dir.join("sprite").join("ofm.json").exists() {
+        return Ok(());
+    }
+    let _ = app.emit("download-status", "Stahuji fonty a ikony…");
+
+    for stack in FONTSTACKS {
+        for range in GLYPH_RANGES {
+            let url = format!("{FONTS_URL_BASE}/{}/{range}.pbf", stack.replace(' ', "%20"));
+            let dest = dir.join("glyphs").join(stack).join(format!("{range}.pbf"));
+            fetch_to(app, client, &url, dest).await?;
+        }
+    }
+    for f in SPRITE_FILES {
+        let dest = dir.join("sprite").join(f);
+        fetch_to(app, client, &format!("{SPRITE_URL_BASE}/{f}"), dest).await?;
+    }
+
+    let _ = app.emit("download-status", "");
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn download_region(
     app: AppHandle,
@@ -174,6 +229,9 @@ pub async fn download_region(
         .user_agent("tauri-app-offline-tiles/0.1")
         .build()
         .map_err(|e| e.to_string())?;
+
+    // Fonts + icons first (once), then the tiles for this region.
+    download_assets(&app, &client).await?;
 
     let start = std::time::Instant::now();
     let mut bytes: u64 = 0;
@@ -241,13 +299,15 @@ pub async fn download_region(
     Ok(())
 }
 
+// Serve a stored file (tile, glyph or sprite) to the map by its relative path,
+// e.g. "tiles/12/34/56.pbf" or "sprite/ofm.json". Missing files come back empty.
 #[tauri::command]
-pub fn get_tile(app: AppHandle, z: u32, x: u32, y: u32) -> tauri::ipc::Response {
-    let path = tiles_dir(&app)
-        .join(z.to_string())
-        .join(x.to_string())
-        .join(format!("{y}.pbf"));
-    let bytes = std::fs::read(path).unwrap_or_default();
+pub fn get_asset(app: AppHandle, path: String) -> tauri::ipc::Response {
+    // Guard against path traversal escaping the data dir.
+    if path.contains("..") {
+        return tauri::ipc::Response::new(Vec::new());
+    }
+    let bytes = std::fs::read(data_dir(&app).join(path)).unwrap_or_default();
     tauri::ipc::Response::new(bytes)
 }
 
