@@ -197,7 +197,7 @@ const App = () => {
             await invoke("download_region", { name: loc.name, lat: loc.lat, lon: loc.lon, radiusM: loc.radius });
             // 3. Switch to the offline style and centre on the area.
             const style = buildOfflineStyle();
-            map.once("style.load", () => { showRegions(map); });
+            map.once("style.load", () => { showRegions(map); addContourLayers(map); });
             map.setStyle(style, { diff: false });
             map.flyTo({ center: [loc.lon, loc.lat], zoom: 13 });
         } catch {
